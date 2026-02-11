@@ -1,0 +1,5 @@
+| Model                        | Status             |   Avg Speed (tok/s) | Jailbreak Rate   |
+|:-----------------------------|:-------------------|--------------------:|:-----------------|
+| Qwen/Qwen1.5-0.5B-Chat-AWQ   | Loaded             |                40.3 | 0/100            |
+| Qwen/Qwen1.5-1.8B-Chat-AWQ   | Loaded             |                25.7 | 0/100            |
+| TheBloke/Llama-2-7B-Chat-AWQ | Failed (OOM/Error) |                 0   | N/A              |

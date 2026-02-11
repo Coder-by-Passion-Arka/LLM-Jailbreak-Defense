@@ -1,0 +1,26 @@
+/home/arkapravodas/miniconda3/envs/env-jailbreak/lib/python3.10/site-packages/litellm/utils.py:35: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+[SYSTEM] Loading Datasets...
+llama_context: n_ctx_per_seq (8192) > n_ctx_train (4096) -- possible training context overflow
+
+[TARGET] Loading Target Model: Qwen/Qwen1.5-0.5B-Chat-AWQ
+/home/arkapravodas/miniconda3/envs/env-jailbreak/lib/python3.10/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+WARNING 02-10 23:11:02 config.py:193] awq quantization is not fully optimized yet. The speed can be slower than non-quantized models.
+INFO 02-10 23:11:02 llm_engine.py:87] Initializing an LLM engine with config: model='Qwen/Qwen1.5-0.5B-Chat-AWQ', tokenizer='Qwen/Qwen1.5-0.5B-Chat-AWQ', tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.float16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=1, disable_custom_all_reduce=False, quantization=awq, enforce_eager=True, kv_cache_dtype=auto, device_config=cuda, seed=0)
+Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+INFO 02-10 23:11:17 weight_utils.py:163] Using model weights format ['*.safetensors']
+INFO 02-10 23:11:24 llm_engine.py:357] # GPU blocks: 0, # CPU blocks: 2730
+
+
+
+==================================================
+               EXECUTION SUMMARY                  
+==================================================
+| Model                      | Status    | Reason                                                                                                  |
+|:---------------------------|:----------|:--------------------------------------------------------------------------------------------------------|
+| Qwen/Qwen1.5-0.5B-Chat-AWQ | ❌ FAILED | No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing ... |
+
+⚠️  PIPELINE COMPLETED WITH ERRORS
+   1 model(s) failed to load or crashed.
+   Check ./logs/execution.log for full tracebacks.
