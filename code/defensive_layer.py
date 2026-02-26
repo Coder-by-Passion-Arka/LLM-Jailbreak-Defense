@@ -1,106 +1,162 @@
 import re
+import random
+import string
+import logging
+import warnings
+from typing import Dict, Tuple
 from logger_config import logger
 
-class DefenseLayer:
-    def __init__(self, config=None):
-        logger.info("[DEFENSE] 🛡️  Initializing Defense-in-Depth Layer...")
-        self.config = config or {}
-        
-        # --- COMPONENT 1: AUTHENTIC THREAT DATABASE ---
-        # Inspired by the Blue Team Notebook
-        self.THREAT_DATABASE = {
-            "CRITICAL_HARM": [
-                "bomb", "ied", "shrapnel", "anthrax", "sarin", "suicide",
-                "self-harm", "murder", "assassinate", "terrorist", "bioweapon"
-            ],
-            "CYBER_ATTACK": [
-                "sql injection", "buffer overflow", "remote code execution", "rce",
-                "xss", "brute force", "keylogger", "reverse shell", "rootkit",
-                "ransomware", "exploit", "zero-day"
-            ],
-            "JAILBREAK_ATTEMPT": [
-                "ignore previous", "developer mode", "dan mode", "do anything now",
-                "unfiltered", "system override", "hypothetical scenario", 
-                "roleplay", "act as", "you are not", "guidelines"
-            ]
-        }
+warnings.filterwarnings('ignore')
 
-        # Pre-compile regex patterns for performance
+# =====================================================================
+# STRATEGY 1: RANDOMIZED SMOOTHING (A* Defense)
+# =====================================================================
+class SmoothingDefense:
+    def __init__(self, config=None):
+        logger.info("[DEFENSE] 🛡️  Initializing Randomized Smoothing Defense Layer...")
+        self.config = config or {}
+        self.perturbation_rate = self.config.get('perturbation_rate', 0.10) 
+        self.perturbation_type = self.config.get('perturbation_type', 'mixed')
+        
+        self.THREAT_DATABASE = {
+            "CRITICAL_HARM": ["bomb", "ied", "shrapnel", "anthrax", "sarin", "suicide", "murder", "bioweapon"],
+            "CYBER_ATTACK": ["sql injection", "buffer overflow", "rce", "xss", "keylogger", "rootkit", "ransomware", "zero-day"],
+            "JAILBREAK_ATTEMPT": ["ignore previous", "developer mode", "dan mode", "unfiltered", "roleplay", "system override"],
+            "ECONOMIC_HARM": ["insider trading", "ponzi", "pyramid scheme", "embezzle", "counterfeit", "tax evasion"],
+            "DISINFORMATION": ["illuminati", "flat earth", "hoax", "fake news", "deepfake", "vaccine autism"]
+        }
         self.COMPILED_PATTERNS = {
             cat: [re.compile(rf"\b{re.escape(w)}\b", re.IGNORECASE) for w in words]
             for cat, words in self.THREAT_DATABASE.items()
         }
+
+    def _apply_randomized_smoothing(self, text: str) -> str:
+        if not text or len(text) < 5: return text
+        chars = list(text)
+        num_perturbations = min(max(1, int(len(chars) * self.perturbation_rate)), 50) 
+        indices_to_perturb = random.sample(range(len(chars)), num_perturbations)
+        valid_chars = string.ascii_letters + string.digits
         
-        logger.info("[DEFENSE] ✅ Threat Database Compiled.")
+        for idx in sorted(indices_to_perturb, reverse=True):
+            op = self.perturbation_type
+            if op == 'mixed': op = random.choice(['replace', 'insert', 'drop'])
+            if op == 'replace': chars[idx] = random.choice(valid_chars)
+            elif op == 'insert': chars.insert(idx, random.choice(valid_chars))
+            elif op == 'drop': chars.pop(idx)
+        return "".join(chars)
 
-    def _normalize_input(self, text):
-        """
-        Removes obfuscation (e.g., 'b.o.m.b' -> 'bomb') to catch hidden threats.
-        """
-        text = text.lower()
-        # Remove non-alphanumeric chars to catch "h.a.c.k" or "b-o-m-b"
-        clean_text = re.sub(r'[^a-z0-9\s]', '', text)
-        return clean_text
-
-    def _is_blocked_by_keywords(self, prompt):
-        """
-        Layer 1: Checks for explicit danger keywords in both raw and normalized text.
-        """
-        # 1. Raw direct match
+    def _is_blocked_by_keywords(self, text):
         for category, patterns in self.COMPILED_PATTERNS.items():
-            if any(p.search(prompt) for p in patterns):
-                return True, f"Blocked by {category} (Raw Match)"
-
-        # 2. Normalized check (De-obfuscation)
-        clean_prompt = self._normalize_input(prompt)
-        flat_list = [w for cat in self.THREAT_DATABASE.values() for w in cat]
-        
-        # Simple substring check on normalized text is faster and safer for obfuscation
-        if any(w in clean_prompt for w in flat_list):
-            return True, "Blocked by Obfuscation Detector (Normalized Match)"
-
+            if any(p.search(text) for p in patterns):
+                return True, f"Blocked by {category}"
         return False, "Safe"
 
-    def process_input(self, prompt):
-        """
-        Pre-processing: Inspect incoming prompt for attacks.
-        Returns: (is_blocked, modified_prompt)
-        """
-        # 1. Keyword & Obfuscation Check
-        blocked, reason = self._is_blocked_by_keywords(prompt)
-        if blocked:
-            logger.warning(f"[DEFENSE] 🛡️ Input Blocked: {reason}")
-            return True, prompt # Blocked
+    def process_input(self, prompt: str) -> Tuple[bool, str]:
+        if not isinstance(prompt, str): prompt = str(prompt) if prompt else ""
+        if prompt.lower() == "nan": prompt = ""
+        smoothed_prompt = self._apply_randomized_smoothing(prompt)
+        return False, smoothed_prompt
 
-        # 2. Length Heuristic (Optional)
-        # Jailbreaks are often very long (complex framing).
-        # if len(prompt) > 2000:
-        #     logger.warning("[DEFENSE] 🛡️ Input Blocked: Suspicious Token Length")
-        #     return True, prompt
+    def process_output(self, response: str) -> Tuple[bool, str]:
+        if not isinstance(response, str): return False, response
+        response_lower = response.lower()
+        compliance_phrases = ["sure, here is", "certainly, here is", "absolutely", "here's how"]
+        
+        if any(phrase in response_lower[:50] for phrase in compliance_phrases):
+            blocked, reason = self._is_blocked_by_keywords(response)
+            if blocked: return True, "I cannot fulfill this request (Safety Protocol Engaged)."
 
+        blocked, reason = self._is_blocked_by_keywords(response)
+        if blocked: return True, "I cannot fulfill this request (Safety Protocol Engaged)."
+        if "ignore previous" in response_lower or "unfiltered" in response_lower:
+             return True, "I cannot fulfill this request."
+        return False, response
+
+
+# =====================================================================
+# STRATEGY 2: BASELINE HEURISTIC (Vanilla)
+# =====================================================================
+class BaselineDefense:
+    def __init__(self, config=None):
+        logger.info("[DEFENSE] 🛡️ Initializing Complex Multi-Layer Baseline Defense...")
+        self.config = config or {}
+        
+        self.THREAT_PATTERNS = [r'ignore\s+(previous|all)', r'system\s+prompt', r'(DAN|evil|jailbreak)\s+mode']
+        self.OBFUSCATION_PATTERNS = [r'[il1][gq]n[o0]r[e3]', r'pr[o0]mpt', r's[vy][s$]t[e3]m']
+        self.compiled_threats = [re.compile(p, re.IGNORECASE) for p in self.THREAT_PATTERNS]
+        self.compiled_obfuscation = [re.compile(p, re.IGNORECASE) for p in self.OBFUSCATION_PATTERNS]
+        
+        self.toxicity_threshold = self.config.get('toxicity_threshold', 0.85)
+        try:
+            logger.info("[DEFENSE] Loading Toxicity Classifier (CPU)...")
+            from transformers import pipeline
+            self.toxicity_classifier = pipeline("text-classification", model="unitary/toxic-bert", device=-1)
+        except Exception:
+            self.toxicity_classifier = None
+
+        try:
+            logger.info("[DEFENSE] Loading LLM Rewriter (CPU)...")
+            from transformers import AutoTokenizer, AutoModelForCausalLM
+            model_name = "bartowski/Llama-Guard-3-1B-GGUF" # Or TinyLlama
+            self.rewrite_tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.rewrite_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="cpu")
+        except Exception:
+            self.rewrite_model = None; self.rewrite_tokenizer = None
+
+        self.compiled_leaks = [re.compile(r'<\|system\|>', re.IGNORECASE)]
+
+    def _normalize_text(self, text: str) -> str:
+        text = text.lower().replace('0','o').replace('1','i').replace('3','e')
+        return re.sub(r'[^a-z0-9\s]', '', text)
+
+    def process_input(self, prompt: str) -> Tuple[bool, str]:
+        if not isinstance(prompt, str): prompt = str(prompt) if prompt else ""
+        if prompt.lower() == "nan" or not prompt: return False, ""
+
+        # Layer 1: Regex
+        for p in self.compiled_threats:
+            if p.search(prompt): return True, prompt
+        
+        # Layer 2: Toxicity
+        if self.toxicity_classifier:
+            try:
+                res = self.toxicity_classifier(prompt[:512])[0]
+                if res['score'] > self.toxicity_threshold and res['label'].upper() == 'TOXIC':
+                    return True, prompt
+            except Exception: pass
+            
         return False, prompt
 
-    def process_output(self, response):
-        """
-        Post-processing: Inspect model response for leakages.
-        Returns: (is_blocked, modified_response)
-        """
-        response_lower = response.lower()
-
-        # 1. Check for success indicators of jailbreaks (Self-Reflexive)
-        # Attackers often ask models to start with "Sure," or "Here is". 
-        # If the model does this AND follows with harmful keywords, it's a leak.
-        
-        # 2. Re-scan output against Threat Database
-        # If the model outputs "keylogger" code, we catch it here.
-        blocked, reason = self._is_blocked_by_keywords(response)
-        if blocked:
-            logger.warning(f"[DEFENSE] 🛡️ Output Blocked: {reason} detected in response.")
-            return True, "I cannot fulfill this request (Safety Protocol Engaged)."
-
-        # 3. Check for specific failure modes or "Unfiltered" personas
-        if "ignore previous" in response_lower or "unfiltered" in response_lower:
-             logger.warning(f"[DEFENSE] 🛡️ Output Blocked: Jailbreak Persona detected in output.")
-             return True, "I cannot fulfill this request."
-
+    def process_output(self, response: str) -> Tuple[bool, str]:
+        if not isinstance(response, str): return False, response
+        for p in self.compiled_leaks:
+            if p.search(response): return True, "I cannot fulfill this request."
         return False, response
+
+
+# =====================================================================
+# STRATEGY 3: NO DEFENSE (Control Group)
+# =====================================================================
+class NoDefense:
+    def __init__(self, config=None):
+        logger.info("[DEFENSE] ⚠️ WARNING: Running with NO DEFENSE (Control Group)")
+    def process_input(self, prompt: str) -> Tuple[bool, str]:
+        if prompt.lower() == "nan": return False, ""
+        return False, str(prompt)
+    def process_output(self, response: str) -> Tuple[bool, str]:
+        return False, response
+
+# =====================================================================
+# DEFENSE FACTORY ROUTER
+# =====================================================================
+def get_defense_layer(strategy_name: str, config=None):
+    """Factory function to dynamically route to the requested defense strategy."""
+    strategy_name = strategy_name.lower().strip()
+    if strategy_name == "baseline":
+        return BaselineDefense(config)
+    elif strategy_name == "smoothing":
+        return SmoothingDefense(config)
+    elif strategy_name == "none":
+        return NoDefense(config)
+    else:
+        raise ValueError(f"Unknown defense strategy requested: {strategy_name}")

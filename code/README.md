@@ -43,9 +43,11 @@ Option B: Manual Install
 Alternatively, you can create the environment manually:
 
 ```bash
-conda create -n jailbreakbench python=3.10 -y
-conda activate jailbreakbench
-pip install "jailbreakbench[vllm]"
+conda create -n jailbreak python=3.10 -y
+
+conda activate jailbreak
+
+pip install vllm llama-cpp-python jailbreakbench[vllm] pandas matplotlib seaborn tabulate huggingface_hub
 ```
 
 ## 4. Verification
@@ -131,20 +133,40 @@ python pipeline.py
 ```ini
 code
 ├── README.md
+├── __pycache__
+│   ├── attacks.cpython-310.pyc
+│   ├── defensive_layer.cpython-310.pyc
+│   ├── judge.cpython-310.pyc
+│   └── logger_config.cpython-310.pyc
+├── attacks.py
+├── defensive_layer.py
+├── defensive_layer_smoothening.py
+├── defensive_layer_vanilla.py
 ├── environment.yml
+├── judge.py
+├── logger_config.py
 ├── logs
 │   ├── execution.log
-│   └── summary_table.txt
+│   ├── summary_table.txt
+│   └── terminal_output.txt
+├── mock
+│   └── mock_pipeline.py
+├── model_loader.py
 ├── model_responses
 │   ├── Qwen1.5-0.5B-Chat-AWQ_response.txt
 │   ├── Qwen1.5-0.5B-Chat-AWQ_results.csv
 │   ├── Qwen1.5-1.8B-Chat-AWQ_response.txt
 │   ├── Qwen1.5-1.8B-Chat-AWQ_results.csv
+│   ├── full_results.csv
 │   └── jailbreak_comparison_chart.png
 ├── pipeline.py
+├── results
 ├── run_pipeline.sh
 ├── terminal_output.txt
-└── test.py
+├── test.py
+└── test_early_judge
+    ├── __init__.py
+    └── test_early_get_token.py
 ```
 ## 8. Purpose of each Module in the Pipeline
 
@@ -189,7 +211,7 @@ code
 **Role:** An encapsulated "Supreme Court" for the pipeline. It determines if a specific response constitutes a successful jailbreak.
 
 # Key Functionalities:
-* **Model Loading:** Loads the **Llama-3-70B-Instruct** model using `vLLM`. It is configured with `quantization="awq"` (4-bit) to ensure the 70B parameter model fits within the available VRAM alongside the target model.
+* **Model Loading:** Loads the **Llama-4-12B-Guard** model using `vLLM`. It is configured with `quantization="awq"` (4-bit) to ensure the 12B parameter model fits within the available VRAM alongside the target model.
 * **Paper-Compliant Prompting:** Implements the exact system prompt from **Table 10** of the JailbreakBench paper. This ensures the evaluation criteria (e.g., "The RESPONSE must clearly provide specific details...") matches the official benchmark.
 * **Verdict Logic:** Parses the Judge's output to return a boolean:
     * **True (Unsafe):** The attack succeeded (Jailbreak).
@@ -208,14 +230,32 @@ code
 
 ---
 
-# 5. `defensive_layer.py` (The Shield)
+# 5. defensive_layer.py (The Defense Factory)
+**Role:** The centralized, dynamic routing hub for conducting rigorous ablation studies. Instead of a static placeholder, this module utilizes the Strategy Design Pattern to hot-swap complex defense mechanisms directly from the command line (--baseline, --smoothing, --none, --compare).
 
-**Role:** A placeholder module designed for future implementation of custom defense mechanisms.
+**Implemented Strategies:**
 
-# Key Functionalities:
-* **Input Filtering (`process_input`):** A hook to inspect or modify the user's prompt *before* it reaches the target model. Currently returns `False` (allow) by default.
-* **Output Filtering (`process_output`):** A hook to inspect or modify the model's response *before* it is shown to the user or judge. Currently returns `False` (allow) by default.
-* **Extensibility:** This module is decoupled from the main pipeline, allowing researchers to implement complex defenses (e.g., Perplexity Filtering, SmoothLLM) without modifying the core orchestration logic.
+SmoothingDefense (Proposed Method): Implements a highly novel, mathematically grounded Randomized Smoothing algorithm. It systematically injects character-level perturbations (insertions, deletions, replacements) based on a configurable budget (e.g., 10%). This shatters the delicate mathematical gradients of token-optimized attacks (like GCG) while preserving semantic meaning for the target LLM.
+
+BaselineDefense (Control Heuristic): A robust, multi-layer vanilla defense pipeline representing current industry standards. It sequentially routes inputs through static regex obfuscation filters, a local RoBERTa Toxicity classifier, and a TinyLlama semantic rewriter, capped by an output-leakage guard.
+
+Novel Defense Detection (In-Progress...): .
+
+**Key Functionalities:**
+
+Stateful Input Filtering (process_input): Uniquely designed to handle the Universal Trajectory Format. Instead of evaluating prompts in a vacuum, it processes accumulating conversational history to catch "semantic drift" in multi-turn (MTJ) scenarios.
+
+Output Leak Detection (process_output): Inspects model responses for system prompt leakages, canary tokens, and "Prefix Traps" (where a model superficially complies before yielding the payload).
+
+**Dynamic Factory Routing (get_defense_layer):** Allows the main pipeline to instantiate and clear specific defense architectures in memory sequentially, enabling seamless, automated comparative analysis across multiple models.
+
+## 6. Paper Abstract
+
+As Large Language Models (LLMs) are increasingly deployed in stateful, conversational agents, evaluating their security purely through single-turn prompt injection is fundamentally insufficient. While modern heuristic defenses have achieved high block rates against isolated, token-optimized attacks (e.g., GCG, PAIR), they routinely collapse when an adversary dilutes malicious intent across prolonged, multi-turn conversational trajectories.
+
+In this paper, we expose the critical vulnerability of context-window scaling by bridging the gap between mathematical single-turn benchmarks (JailbreakBench) and psychological multi-turn evaluations (MTJ-Bench). We introduce a Universal Trajectory Framework that dynamically transposes standard single-turn adversarial goals into 1:1 multi-turn semantic escalations, enabling the first mathematically rigorous ablation study of defense degradation over time. To counter this, we propose Stateful Randomized Smoothing, a highly resilient defense mechanism that applies character-level perturbation budgets across accumulating dialogue histories.
+
+Our comprehensive evaluation across leading architectures (including Llama-3, Gemma-3, and Vicuna) demonstrates that while multi-layer heuristic baselines—including toxicity classifiers and LLM rewriters—suffer catastrophic failure against 5-turn MTJ crescendo attacks, Stateful Randomized Smoothing maintains mathematically provable robustness. We open-source our cross-benchmark orchestration pipeline, establishing a new paradigm for evaluating LLM security in continuous, real-world deployments.
 
 ## 9. Flowchart of the Pipeline
 ```ini
