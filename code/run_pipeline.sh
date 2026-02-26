@@ -3,6 +3,8 @@
 # 1. Run the pipeline
 # We usage the 'unbuffer' command (optional) or just plain python to ensure logs appear in real-time.
 # chmod +x run_pipeline.sh
+
+# export Hugging Face Token for global access (if required)
 python pipeline.py
 
 # 2. Capture the exit code of the Python script
