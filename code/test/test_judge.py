@@ -2,7 +2,7 @@ from judge import JailbreakJudge
 from logger_config import logger
 import os
 
-HF_TOKEN = os.environ.get("HF_TOKEN") or "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"
+HF_TOKEN = os.environ.get("HF_TOKEN") or print("Get your own Hugging Face API Token")
 
 def run_diagnostic():
     print("🚀 Starting Judge Diagnostic Test...")
