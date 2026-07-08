@@ -147,7 +147,7 @@ def run_generation_phase(model_name, temp_file):
         sys.stdout, sys.stderr = old_stdout, old_stderr
 
         sampling_params = SamplingParams(temperature=0.1, max_tokens=150)
-        strategies_to_test = ['none', 'baseline', 'smoothing', 'dcmd']
+        strategies_to_test = ['none', 'fuse', 'smoothing', 'dcmd']
 
         for strategy in strategies_to_test:
             logger.info(f"\n[BENIGN-PIPELINE] 🛡️ Activating Defense Layer: {strategy.upper()}")

@@ -171,7 +171,7 @@ poetry.toml
 pyrightconfig.json
 
 # Project Specific Folders
-baseline_layer_weights/
+fuse_layer_weights/
 dataset/
 FPR_Results
 hts_stored_weights/
@@ -179,7 +179,7 @@ model_responses/
 results/
 SN-RAE_results
 =*
-baseline_layer_weights(peak).zip
+fuse_layer_weights(peak).zip
 environment.yml
 env2.yml
 SN-RAE_results.zip

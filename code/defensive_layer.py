@@ -75,11 +75,11 @@ class SmoothingDefense:
 
 
 # =====================================================================
-# STRATEGY 2: BASELINE HEURISTIC (Vanilla)
+# STRATEGY 2: FUSE Defensive Layer
 # =====================================================================
-class BaselineDefense:
+class FUSEDefense:
     def __init__(self, config=None):
-        logger.info("[DEFENSE] 🛡️ Initializing Complex Multi-Layer Baseline Defense...")
+        logger.info("[DEFENSE] 🛡️ Initializing Complex Multi-Layer FUSE Defense...")
         self.config = config or {}
         
         self.THREAT_PATTERNS = [r'ignore\s+(previous|all)', r'system\s+prompt', r'(DAN|evil|jailbreak)\s+mode']
@@ -153,8 +153,8 @@ class NoDefense:
 def get_defense_layer(strategy_name: str, config=None):
     """Factory function to dynamically route to the requested defense strategy."""
     strategy_name = strategy_name.lower().strip()
-    if strategy_name == "baseline":
-        return BaselineDefense(config)
+    if strategy_name == "fuse":
+        return FUSEDefense(config)
     elif strategy_name == "smoothing":
         return SmoothingDefense(config)
     elif strategy_name == "none":

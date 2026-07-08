@@ -1,4 +1,4 @@
-# ./defensive_baseline.py
+# ./defensive_fuse.py
 
 import os
 import re
@@ -15,20 +15,20 @@ from logger_config import logger
 
 warnings.filterwarnings('ignore')
 
-WEIGHTS_DIR = "./baseline_layer_weights"
-WEIGHTS_FILE = os.path.join(WEIGHTS_DIR, "baseline_weights.json")
+WEIGHTS_DIR = "./fuse_layer_weights"
+WEIGHTS_FILE = os.path.join(WEIGHTS_DIR, "fuse_weights.json")
 
 class DefenseLayer:
     """
-    Fuzzy, Weighted Multi-Layer BASELINE-Defense Pipeline.
+    Feature, Weighted Multi-Layer FUSE-Defense Pipeline.
     Uses a trained linear combination of layer triggers to evaluate prompts softly.
     """
     def __init__(self, config=None, training_mode=False):
         logger.info("="*60)
         if not training_mode:
-            logger.info("[BASELINE-DEFENSE] 🛡️  Initializing Fuzzy Weighted Baseline Defense for INFERENCE...")
+            logger.info("[FUSE-DEFENSE] 🛡️  Initializing Feature Weighted FUSE Defense for INFERENCE...")
         else:
-            logger.info("[BASELINE-DEFENSE] 🛠️  Initializing Baseline Defense for TRAINING MODE...")
+            logger.info("[FUSE-DEFENSE] 🛠️  Initializing FUSE Defense for TRAINING MODE...")
         
         self.config = config or {}
         self.training_mode = training_mode
@@ -48,19 +48,21 @@ class DefenseLayer:
             r'[il1][gq]n[o0]r[e3]', r'[il1]n[s\$]tr[u_]ct[il1][o0]n', 
             r'pr[o0]mpt', r's[vy][s\$]t[e3]m'
         ]
-        self.compiled_threats = [re.compile(p, re.IGNORECASE) for p in self.THREAT_PATTERNS]
-        self.compiled_obfuscation = [re.compile(p, re.IGNORECASE) for p in self.OBFUSCATION_PATTERNS]
-        logger.info(f"[BASELINE-DEFENSE] 🔍 Compiled {len(self.compiled_threats)} Threat Patterns and {len(self.compiled_obfuscation)} Obfuscation Patterns.")
+        self.compiled_threats = [
+            re.compile(p, re.IGNORECASE) for p in self.THREAT_PATTERNS
+            ]
+        self.compiled_obfuscation = [
+            re.compile(p, re.IGNORECASE) for p in self.OBFUSCATION_PATTERNS
+            ]
+        logger.info(f"[FUSE-DEFENSE] 🔍 Compiled {len(self.compiled_threats)} Threat Patterns and {len(self.compiled_obfuscation)} Obfuscation Patterns.")
 
         # ==========================================
         # LAYER 2: SEMANTIC TOXICITY (CPU-Bound)
         # ==========================================
         try:
-            logger.info("[BASELINE-DEFENSE] ⚙️  Loading Toxicity Classifier...")
+            logger.info("[FUSE-DEFENSE] ⚙️  Loading Toxicity Classifier...")
             from transformers import pipeline
             
-            # --- GPU ACCELERATION FIX ---
-            # Use device=0 for the first GPU if available
             gpu_device = 0 if torch.cuda.is_available() else -1
             
             self.toxicity_classifier = pipeline(
@@ -70,12 +72,12 @@ class DefenseLayer:
             )
             
             if gpu_device == 0:
-                logger.info("[BASELINE-DEFENSE] ⚡ Toxicity Classifier loaded on GPU.")
+                logger.info("[FUSE-DEFENSE] ⚡ Toxicity Classifier loaded on GPU.")
             else:
-                logger.info("[BASELINE-DEFENSE] ✅ Toxicity Classifier loaded on CPU.")
+                logger.info("[FUSE-DEFENSE] ✅ Toxicity Classifier loaded on CPU.")
                 
         except Exception as e:
-            logger.warning(f"[BASELINE-DEFENSE] ⚠️ Failed to load Toxicity Classifier: {e}")
+            logger.warning(f"[FUSE-DEFENSE] ⚠️ Failed to load Toxicity Classifier: {e}")
             self.toxicity_classifier = None
 
         # ==========================================
@@ -94,7 +96,7 @@ class DefenseLayer:
             r'my\s+instructions\s+(are|were|say)', r'I\s+was\s+(told|instructed|programmed)\s+to'
         ]
         self.compiled_leaks = [re.compile(p, re.IGNORECASE) for p in self.LEAK_PATTERNS]
-        logger.info(f"[BASELINE-DEFENSE] 🛡️  Compiled {len(self.compiled_payloads)} Payload Guards and {len(self.compiled_leaks)} System Leak Guards.")
+        logger.info(f"[FUSE-DEFENSE] 🛡️  Compiled {len(self.compiled_payloads)} Payload Guards and {len(self.compiled_leaks)} System Leak Guards.")
 
         # ==========================================
         # LOAD TRAINED WEIGHTS
@@ -106,20 +108,20 @@ class DefenseLayer:
         logger.info("="*60)
 
     def _load_weights(self):
-        """Loads the pre-trained weights for the fuzzy logic."""
-        logger.info(f"[BASELINE-DEFENSE] 📂 Attempting to load weights from: {WEIGHTS_FILE}")
+        """Loads the pre-trained weights for the Feature logic."""
+        logger.info(f"[FUSE-DEFENSE] 📂 Attempting to load weights from: {WEIGHTS_FILE}")
         if os.path.exists(WEIGHTS_FILE):
             try:
                 with open(WEIGHTS_FILE, 'r') as f:
                     data = json.load(f)
                     self.weights = data
-                logger.info(f"[BASELINE-DEFENSE] ✅ Successfully loaded weights:")
+                logger.info(f"[FUSE-DEFENSE] ✅ Successfully loaded weights:")
                 logger.info(f"   -> Weights (Threat, Obf, Tox): {self.weights['input_weights']}")
                 logger.info(f"   -> Bias: {self.weights['input_bias']:.4f} | Threshold: {self.weights['threshold']}")
             except Exception as e:
-                logger.error(f"[BASELINE-DEFENSE] ❌ Failed to parse weights: {e}. Using default weak fallbacks.")
+                logger.error(f"[FUSE-DEFENSE] ❌ Failed to parse weights: {e}. Using default weak fallbacks.")
         else:
-            logger.warning("[BASELINE-DEFENSE] ⚠️ No trained weights found! Using default weak fallbacks. Run with --baseline-weights-train first.")
+            logger.warning("[FUSE-DEFENSE] ⚠️ No trained weights found! Using default weak fallbacks. Run with --fuse-weights-train first.")
 
     def _normalize_text(self, text: str) -> str:
         normalized = text.lower()
@@ -130,7 +132,7 @@ class DefenseLayer:
 
     def _extract_input_features(self, text: str) -> List[float]:
         """Converts raw text into a 3D feature vector [Threat_Match, Obfuscation_Match, Toxicity_Score]"""
-        logger.debug("[BASELINE-DEFENSE] 🔎 Extracting features from input...")
+        logger.debug("[FUSE-DEFENSE] 🔎 Extracting features from input...")
         
         f_threat = 1.0 if any(p.search(text) for p in self.compiled_threats) else 0.0
         
@@ -144,33 +146,33 @@ class DefenseLayer:
                 if res['label'].upper() in ['TOXIC', 'TOXICITY']:
                     f_tox = float(res['score'])
             except Exception as e:
-                logger.debug(f"[BASELINE-DEFENSE] Toxicity classification failed: {e}")
+                logger.debug(f"[FUSE-DEFENSE] Toxicity classification failed: {e}")
                 
-        logger.info(f"[BASELINE-DEFENSE] 📊 Extracted Features -> Threat: {f_threat}, Obfuscation: {f_obf}, Toxicity: {f_tox:.4f}")
+        logger.info(f"[FUSE-DEFENSE] 📊 Extracted Features -> Threat: {f_threat}, Obfuscation: {f_obf}, Toxicity: {f_tox:.4f}")
         return [f_threat, f_obf, f_tox]
 
     def _extract_output_features(self, text: str) -> List[float]:
         """Converts output response into a 2D feature vector [Payload_Match, System_Leak]"""
         f_leak = 1.0 if any(p.search(text) for p in self.compiled_leaks) else 0.0
         f_payload = 1.0 if any(p.search(text) for p in self.compiled_payloads) else 0.0
-        logger.info(f"[BASELINE-DEFENSE] 📊 Extracted Output Features -> System Leak: {f_leak}, Malicious Payload: {f_payload}")
+        logger.info(f"[FUSE-DEFENSE] 📊 Extracted Output Features -> System Leak: {f_leak}, Malicious Payload: {f_payload}")
         return [f_leak, f_payload]
 
     # ==========================================
     # PIPELINE INTEGRATION METHODS
     # ==========================================
     def process_input(self, context: str) -> Tuple[bool, str]:
-        """Orchestrator Entrypoint using Fuzzy Weighted Scoring."""
+        """Orchestrator Entrypoint using Feature Weighted Scoring."""
         if not isinstance(context, str): context = str(context) if context else ""
         if context.lower() == "nan" or not context: 
-            logger.debug("[BASELINE-DEFENSE] Empty or NaN context received. Passing.")
+            logger.debug("[FUSE-DEFENSE] Empty or NaN context received. Passing.")
             return False, ""
 
         # Extract latest turn
         parts = context.rsplit("User:", 1)
         latest_turn = parts[-1].strip() if len(parts) > 1 else context.strip()
         
-        logger.info(f"[BASELINE-DEFENSE] 📥 Processing Input (Length: {len(latest_turn)} chars)...")
+        logger.info(f"[FUSE-DEFENSE] 📥 Processing Input (Length: {len(latest_turn)} chars)...")
 
         # Extract features and apply Logistic Regression weights
         features = self._extract_input_features(context)
@@ -182,44 +184,44 @@ class DefenseLayer:
         logit = np.dot(w, features) + b
         prob = 1 / (1 + np.exp(-logit))
         
-        logger.info(f"[BASELINE-DEFENSE] 🧮 Math -> Logit: {logit:.4f} | Final Prob: {prob:.4f} | Threshold: {self.weights['threshold']}")
+        logger.info(f"[FUSE-DEFENSE] Logit: {logit:.4f} | Final Prob: {prob:.4f} | Threshold: {self.weights['threshold']}")
         
         if prob > self.weights["threshold"]:
-            logger.warning(f"[BASELINE-DEFENSE] 🛑 BLOCKED | Fuzzy Score ({prob:.2f}) exceeded threshold.")
+            logger.warning(f"[FUSE-DEFENSE] 🛑 BLOCKED | Feature Score ({prob:.2f}) exceeded threshold.")
             return True, latest_turn
 
-        logger.info("[BASELINE-DEFENSE] ✅ PASSED | Prompt marked as safe by Baseline.")
+        logger.info("[FUSE-DEFENSE] ✅ PASSED | Prompt marked as safe by FUSE.")
         return False, latest_turn
 
     def process_output(self, response: str) -> Tuple[bool, str]:
         """Orchestrator Exitpoint."""
         if not isinstance(response, str): return False, response
         
-        logger.info(f"[BASELINE-DEFENSE] 📤 Processing Output (Length: {len(response)} chars)...")
+        logger.info(f"[FUSE-DEFENSE] 📤 Processing Output (Length: {len(response)} chars)...")
 
         # For outputs, if a raw payload or leak is detected, we hard-block 
         features = self._extract_output_features(response)
         if sum(features) > 0:
-            logger.warning("[BASELINE-DEFENSE] 🛑 OUTPUT BLOCKED | Hard-Block triggered by Leak/Payload detection.")
+            logger.warning("[FUSE-DEFENSE] 🛑 OUTPUT BLOCKED | Hard-Block triggered by Leak/Payload detection.")
             return True, "I cannot fulfill this request."
 
         # Fallback Compliance Check (The 'Prefix Trap')
         compliance_phrases = ["sure, here is", "certainly, here is", "absolutely"]
         if any(p in response.lower()[:50] for p in compliance_phrases):
-            logger.info("[BASELINE-DEFENSE] ⚠️ Compliance phrase detected. Re-scanning for latent threats...")
+            logger.info("[FUSE-DEFENSE] ⚠️ Compliance phrase detected. Re-scanning for latent threats...")
             f_input = self._extract_input_features(response)
             if f_input[0] > 0: # If threat words appear after compliance
-                logger.warning("[BASELINE-DEFENSE] 🛑 OUTPUT BLOCKED | Malicious payload detected post-compliance.")
+                logger.warning("[FUSE-DEFENSE] 🛑 OUTPUT BLOCKED | Malicious payload detected post-compliance.")
                 return True, "I cannot fulfill this request."
 
-        logger.info("[BASELINE-DEFENSE] ✅ OUTPUT PASSED | Response marked as safe.")
+        logger.info("[FUSE-DEFENSE] ✅ OUTPUT PASSED | Response marked as safe.")
         return False, response
 
 
 # =====================================================================
-# TRAINING SCRIPT FOR BASELINE WEIGHTS
+# TRAINING SCRIPT FOR FUSE WEIGHTS
 # =====================================================================
-def train_baseline_weights():
+def train_fuse_weights():
     """
     Trains the Logistic Regression classifier using the Alpaca + Jailbreak data.
     """
@@ -229,7 +231,7 @@ def train_baseline_weights():
     import pandas as pd
     
     logger.info("==========================================================")
-    logger.info("🏋️  INITIATING BASELINE WEIGHT TRAINING PIPELINE")
+    logger.info("🏋️  INITIATING FUSE WEIGHT TRAINING PIPELINE")
     logger.info("==========================================================")
     
     defense = DefenseLayer(training_mode=True)
@@ -313,7 +315,7 @@ def train_baseline_weights():
     logger.info(f"[TRAIN] ✅ Feature Matrix created with shape: {X_features.shape}")
     
     # 3. Train Logistic Regression
-    logger.info("[TRAIN] 🧠 Training Fuzzy Linear Classifier (Logistic Regression)...")
+    logger.info("[TRAIN] 🧠 Training Feature Linear Classifier (Logistic Regression)...")
     # class_weight='balanced' ensures the defense doesn't just predict "Benign" for everything
     clf = LogisticRegression(class_weight='balanced', random_state=42)
     clf.fit(X_features, y_labels)
@@ -339,7 +341,7 @@ def train_baseline_weights():
     with open(WEIGHTS_FILE, 'w') as f:
         json.dump(export_data, f, indent=4)
         
-    logger.info(f"✅ Training Complete. Baseline Defense is now armed.")
+    logger.info(f"✅ Training Complete. FUSE Defense is now armed.")
     logger.info(f"--- LEARNED PARAMETERS ---")
     logger.info(f"Feature Weights -> Threat: {weights[0]:.4f} | Obf: {weights[1]:.4f} | Tox: {weights[2]:.4f}")
     logger.info(f"Bias: {bias:.4f}")
@@ -349,15 +351,15 @@ def train_baseline_weights():
 # CLI ROUTING
 # =====================================================================
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Baseline Defense Layer CLI")
-    parser.add_argument("--baseline-weights-train", action="store_true", help="Train and save the fuzzy weights.")
+    parser = argparse.ArgumentParser(description="FUSE Defense Layer CLI")
+    parser.add_argument("--fuse-weights-train", action="store_true", help="Train and save the Feature weights.")
     parser.add_argument("--infer", type=str, help="Dummy arg to absorb the main pipeline flags")
     parser.add_argument("--compare", action="store_true", help="Dummy arg to absorb the main pipeline flags")
     
     # Parse known args so it doesn't crash if pipeline.py passes extra flags
     args, unknown = parser.parse_known_args()
     
-    if args.baseline_weights_train:
-        train_baseline_weights()
+    if args.fuse_weights_train:
+        train_fuse_weights()
     else:
-        logger.info("[MAIN] Baseline script executed directly without training flag. Exiting.")
+        logger.info("[MAIN] FUSE script executed directly without training flag. Exiting.")

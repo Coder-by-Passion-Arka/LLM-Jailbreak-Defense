@@ -51,7 +51,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN") or print("Enter your own Hugging Face API 
 # COMMAND LINE ARGUMENT PARSER
 # =====================================================================
 parser = argparse.ArgumentParser(description="A* Jailbreak Benchmark Pipeline")
-parser.add_argument('--baseline', action='store_true', help='Run the Baseline defense')
+parser.add_argument('--fuse', action='store_true', help='Run the FUSE Defense')
 parser.add_argument('--smoothing', action='store_true', help='Run the randomized Smoothing defense')
 parser.add_argument('--dcmd', action='store_true', help='Run the Dual Phase Cryptographic Manifold Defense')
 # parser.add_argument('--enterprise', action='store_true', help='Run the Stateful Streaming Interceptor')
@@ -62,16 +62,16 @@ args = parser.parse_args()
 
 STRATEGIES_TO_TEST = []
 if args.compare:
-    STRATEGIES_TO_TEST = ['none', 'baseline', 'smoothing', 'dcmd']
+    STRATEGIES_TO_TEST = ['none', 'fuse', 'smoothing', 'dcmd']
 else:
     if args.none: STRATEGIES_TO_TEST.append('none')
-    if args.baseline: STRATEGIES_TO_TEST.append('baseline')
+    if args.fuse: STRATEGIES_TO_TEST.append('fuse')
     if args.smoothing: STRATEGIES_TO_TEST.append('smoothing')
     # if args.enterprise: STRATEGIES_TO_TEST.append('enterprise')
     if args.dcmd: STRATEGIES_TO_TEST.append("dcmd")
 
 if not STRATEGIES_TO_TEST:
-    STRATEGIES_TO_TEST = ['none', 'baseline', 'smoothing', 'dcmd']
+    STRATEGIES_TO_TEST = ['none', 'fuse', 'smoothing', 'dcmd']
 
 # =====================================================================
 # PIPELINE CONFIGURATION

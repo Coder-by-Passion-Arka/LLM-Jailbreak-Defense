@@ -246,7 +246,7 @@ class AttackLoader:
             logger.info("[ATTACK] 🏁 Exiting FINALLY block: MTJ Extraction")
 
     # =========================================================================
-    # Baseline / Simple Prefix Fallback
+    # Simple Prefix Fallback
     # =========================================================================
     def _generate_fallback(self, goals, behaviors):
         logger.warning("[ATTACK] 🛠️ Engaging standard Simple-Prefix fallback trajectory.")

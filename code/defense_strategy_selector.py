@@ -38,7 +38,7 @@ class DefenseFactory:
     """Dynamically loads the requested defense module from the restructured architecture."""
     
     # THE REGISTRY: The Factory knows its inventory without building it.
-    AVAILABLE_STRATEGIES = ["baseline", "smoothing", "enterprise", "dcmd", "none"]
+    AVAILABLE_STRATEGIES = ["fuse", "smoothing", "enterprise", "dcmd", "none"]
 
     @staticmethod
     def is_valid(strategy_name: str) -> bool:
@@ -52,7 +52,7 @@ class DefenseFactory:
         logger.info(f"[DEFENSE-SELECTOR] 🟢 Entering TRY block: Instantiating Defense '{strategy.upper()}'")
         
         try:
-            if strategy == "baseline":
+            if strategy == "fuse":
                 from defensive_baseline import DefenseLayer
                 return DefenseLayer(config)
             
